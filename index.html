@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Florbyte — Cobranza Inteligente por WhatsApp</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --teal: #3BBFBF;
+    --teal-dark: #2a9a9a;
+    --teal-light: #7dd8d8;
+    --teal-glow: rgba(59,191,191,0.15);
+    --dark: #0a0f0f;
+    --dark2: #111818;
+    --dark3: #162020;
+    --mid: #1e2e2e;
+    --text: #e8f4f4;
+    --muted: #7a9e9e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE TEXTURE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 4rem;
+    background: rgba(10,15,15,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(59,191,191,0.1);
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .nav-logo svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .nav-logo span {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.3rem;
+    color: var(--teal);
+    letter-spacing: -0.02em;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2.5rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    text-decoration: none;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 400;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--teal); }
+
+  .nav-cta {
+    background: var(--teal);
+    color: var(--dark) !important;
+    padding: 0.5rem 1.25rem;
+    border-radius: 6px;
+    font-weight: 500 !important;
+    transition: background 0.2s !important;
+  }
+
+  .nav-cta:hover { background: var(--teal-light) !important; color: var(--dark) !important; }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 8rem 2rem 4rem;
+    overflow: hidden;
+  }
+
+  .hero-glow {
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(ellipse, rgba(59,191,191,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(59,191,191,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,191,191,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 0%, transparent 100%);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(59,191,191,0.1);
+    border: 1px solid rgba(59,191,191,0.25);
+    color: var(--teal);
+    padding: 0.35rem 0.9rem;
+    border-radius: 100px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--teal);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    max-width: 780px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  h1 em {
+    font-style: normal;
+    color: var(--teal);
+    position: relative;
+  }
+
+  .hero-sub {
+    margin-top: 1.5rem;
+    font-size: 1.15rem;
+    color: var(--muted);
+    max-width: 520px;
+    line-height: 1.7;
+    font-weight: 300;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--teal);
+    color: var(--dark);
+    padding: 0.85rem 1.75rem;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: all 0.2s;
+    box-shadow: 0 0 30px rgba(59,191,191,0.3);
+  }
+
+  .btn-primary:hover {
+    background: var(--teal-light);
+    transform: translateY(-2px);
+    box-shadow: 0 0 40px rgba(59,191,191,0.45);
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    color: var(--text);
+    padding: 0.85rem 1.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--teal);
+    color: var(--teal);
+  }
+
+  /* ── DASHBOARD MOCKUP ── */
+  .hero-visual {
+    margin-top: 4rem;
+    width: 100%;
+    max-width: 860px;
+    animation: fadeUp 0.7s 0.4s ease both;
+    position: relative;
+  }
+
+  .dashboard-frame {
+    background: var(--dark3);
+    border: 1px solid rgba(59,191,191,0.2);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(59,191,191,0.05),
+      0 40px 80px rgba(0,0,0,0.6),
+      0 0 60px rgba(59,191,191,0.08);
+  }
+
+  .frame-bar {
+    background: var(--mid);
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid rgba(59,191,191,0.1);
+  }
+
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #febc2e; }
+  .dot-g { background: #28c840; }
+
+  .frame-url {
+    margin-left: 1rem;
+    background: var(--dark2);
+    border-radius: 6px;
+    padding: 0.3rem 1rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+    flex: 1;
+    max-width: 300px;
+  }
+
+  .dashboard-content {
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .stat-card {
+    background: var(--mid);
+    border: 1px solid rgba(59,191,191,0.1);
+    border-radius: 10px;
+    padding: 1.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .stat-value.teal { color: var(--teal); }
+
+  .stat-change {
+    font-size: 0.72rem;
+    color: #4ade80;
+    margin-top: 0.25rem;
+  }
+
+  .dashboard-bottom {
+    padding: 0 1.5rem 1.5rem;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 1rem;
+  }
+
+  .table-card {
+    background: var(--mid);
+    border: 1px solid rgba(59,191,191,0.1);
+    border-radius: 10px;
+    padding: 1rem;
+  }
+
+  .table-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .table-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0;
+    font-size: 0.75rem;
+    color: var(--muted);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .table-row:last-child { border-bottom: none; }
+
+  .status-badge {
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 500;
+  }
+
+  .status-sent { background: rgba(59,191,191,0.15); color: var(--teal); }
+  .status-pending { background: rgba(254,188,46,0.15); color: #febc2e; }
+  .status-paid { background: rgba(74,222,128,0.15); color: #4ade80; }
+
+  .whatsapp-card {
+    background: var(--mid);
+    border: 1px solid rgba(59,191,191,0.1);
+    border-radius: 10px;
+    padding: 1rem;
+  }
+
+  .wa-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .wa-icon {
+    width: 24px; height: 24px;
+    background: #25d366;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+  }
+
+  .wa-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .wa-bubble {
+    background: var(--dark2);
+    border-radius: 0 8px 8px 8px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .wa-bubble strong { color: var(--text); }
+
+  .wa-bubble-reply {
+    background: rgba(59,191,191,0.1);
+    border-radius: 8px 0 8px 8px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.72rem;
+    color: var(--teal-light);
+    line-height: 1.5;
+    margin-left: auto;
+    max-width: 80%;
+    border: 1px solid rgba(59,191,191,0.2);
+  }
+
+  /* ── FADE BOTTOM on visual ── */
+  .hero-visual::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 120px;
+    background: linear-gradient(transparent, var(--dark));
+    border-radius: 0 0 16px 16px;
+    pointer-events: none;
+  }
+
+  /* ── STATS STRIP ── */
+  .stats-strip {
+    padding: 3rem 4rem;
+    display: flex;
+    justify-content: center;
+    gap: 5rem;
+    border-top: 1px solid rgba(59,191,191,0.08);
+    border-bottom: 1px solid rgba(59,191,191,0.08);
+  }
+
+  .strip-stat { text-align: center; }
+
+  .strip-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--teal);
+  }
+
+  .strip-label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 0.25rem;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .section {
+    padding: 6rem 4rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-tag {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--teal);
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    max-width: 500px;
+    margin-bottom: 3.5rem;
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+
+  .step {
+    position: relative;
+    padding: 2rem;
+    background: var(--dark3);
+    border: 1px solid rgba(59,191,191,0.1);
+    border-radius: 14px;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+
+  .step:hover {
+    border-color: rgba(59,191,191,0.35);
+    transform: translateY(-4px);
+  }
+
+  .step-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 3rem;
+    font-weight: 800;
+    color: rgba(59,191,191,0.12);
+    line-height: 1;
+    margin-bottom: 1rem;
+  }
+
+  .step-icon {
+    width: 44px; height: 44px;
+    background: var(--teal-glow);
+    border: 1px solid rgba(59,191,191,0.25);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+  }
+
+  .step h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+  }
+
+  .step p {
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  /* ── FOR WHO ── */
+  .forwho {
+    padding: 6rem 4rem;
+    background: var(--dark2);
+    border-top: 1px solid rgba(59,191,191,0.08);
+    border-bottom: 1px solid rgba(59,191,191,0.08);
+  }
+
+  .forwho-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+  }
+
+  .problems {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .problem-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.1rem 1.25rem;
+    background: var(--dark3);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px;
+  }
+
+  .problem-icon {
+    width: 36px; height: 36px; flex-shrink: 0;
+    background: rgba(59,191,191,0.08);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+  }
+
+  .problem-text h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+  }
+
+  .problem-text p {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ── CTA ── */
+  .cta-section {
+    padding: 8rem 4rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-glow {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px; height: 400px;
+    background: radial-gradient(ellipse, rgba(59,191,191,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .cta-section h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    max-width: 600px;
+    margin: 0 auto 1.5rem;
+    line-height: 1.1;
+  }
+
+  .cta-section p {
+    color: var(--muted);
+    font-size: 1rem;
+    max-width: 420px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.7;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 2rem 4rem;
+    border-top: 1px solid rgba(59,191,191,0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  footer .logo-small {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    color: var(--teal);
+    font-size: 1rem;
+  }
+
+  footer p {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  /* ── ROI CALCULATOR ── */
+  .calc-section {
+    padding: 6rem 4rem;
+    background: var(--dark2);
+    border-top: 1px solid rgba(59,191,191,0.08);
+    border-bottom: 1px solid rgba(59,191,191,0.08);
+  }
+
+  .calc-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: start;
+  }
+
+  .calc-left .section-tag { margin-bottom: 1rem; }
+
+  .calc-left .section-title { margin-bottom: 1rem; }
+
+  .calc-desc {
+    font-size: 0.9rem;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 2rem;
+  }
+
+  .calc-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .calc-field label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+
+  .calc-field input,
+  .calc-field select {
+    width: 100%;
+    background: var(--dark3);
+    border: 1px solid rgba(59,191,191,0.15);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -moz-appearance: textfield;
+  }
+
+  .calc-field input::-webkit-outer-spin-button,
+  .calc-field input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .calc-field input:focus,
+  .calc-field select:focus {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(59,191,191,0.1);
+  }
+
+  .input-prefix {
+    position: relative;
+  }
+
+  .input-prefix span {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--teal);
+    font-weight: 600;
+    font-size: 0.95rem;
+    pointer-events: none;
+  }
+
+  .input-prefix input {
+    padding-left: 1.8rem;
+  }
+
+  .input-suffix {
+    position: relative;
+  }
+
+  .input-suffix span {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 0.85rem;
+    pointer-events: none;
+  }
+
+  .input-suffix input {
+    padding-right: 2.5rem;
+  }
+
+  /* Results panel */
+  .calc-results {
+    background: var(--dark3);
+    border: 1px solid rgba(59,191,191,0.2);
+    border-radius: 16px;
+    padding: 2rem;
+    position: sticky;
+    top: 100px;
+  }
+
+  .results-header {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--teal);
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(59,191,191,0.1);
+  }
+
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .result-row:last-of-type { border-bottom: none; }
+
+  .result-label {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.4;
+    max-width: 55%;
+  }
+
+  .result-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text);
+    text-align: right;
+  }
+
+  .result-value.highlight { color: var(--teal); }
+  .result-value.danger { color: #f87171; }
+  .result-value.success { color: #4ade80; }
+
+  .roi-highlight {
+    margin-top: 1.5rem;
+    background: linear-gradient(135deg, rgba(59,191,191,0.15), rgba(59,191,191,0.05));
+    border: 1px solid rgba(59,191,191,0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .roi-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+  }
+
+  .roi-number {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.8rem;
+    font-weight: 800;
+    color: var(--teal);
+    line-height: 1;
+    margin-bottom: 0.4rem;
+  }
+
+  .roi-sub {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .calc-cta {
+    display: block;
+    margin-top: 1.5rem;
+    background: var(--teal);
+    color: var(--dark);
+    padding: 0.85rem;
+    border-radius: 8px;
+    text-align: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.2s;
+    box-shadow: 0 0 20px rgba(59,191,191,0.2);
+  }
+
+  .calc-cta:hover {
+    background: var(--teal-light);
+    transform: translateY(-1px);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+
+  .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+
+  @media (max-width: 768px) {
+    .calc-section { padding: 4rem 1.5rem; }
+    .calc-inner { grid-template-columns: 1fr; gap: 2rem; }
+    .calc-results { position: static; }
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .hero { padding: 7rem 1.5rem 3rem; }
+    .steps { grid-template-columns: 1fr; }
+    .forwho-inner { grid-template-columns: 1fr; gap: 2rem; }
+    .stats-strip { gap: 2rem; flex-wrap: wrap; padding: 2rem; }
+    .section { padding: 4rem 1.5rem; }
+    .forwho { padding: 4rem 1.5rem; }
+    .cta-section { padding: 5rem 1.5rem; }
+    footer { flex-direction: column; gap: 1rem; text-align: center; }
+    .dashboard-content { grid-template-columns: 1fr 1fr; }
+    .dashboard-bottom { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <!-- Florbyte flower SVG from logo color -->
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 4 L24 12 L20 20 L16 12 Z" fill="#3BBFBF" opacity="0.9"/>
+      <path d="M34 11 L28 16 L20 20 L26 14 Z" fill="#3BBFBF" opacity="0.85"/>
+      <path d="M36 26 L28 24 L20 20 L28 22 Z" fill="#3BBFBF" opacity="0.8"/>
+      <path d="M20 36 L16 28 L20 20 L24 28 Z" fill="#3BBFBF" opacity="0.85"/>
+      <path d="M4 26 L12 22 L20 20 L12 24 Z" fill="#3BBFBF" opacity="0.8"/>
+      <path d="M6 11 L14 14 L20 20 L12 16 Z" fill="#3BBFBF" opacity="0.75"/>
+      <circle cx="20" cy="20" r="4" fill="#3BBFBF"/>
+    </svg>
+    <span>florbyte</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#como-funciona">Cómo funciona</a></li>
+    <li><a href="#para-quien">Para quién</a></li>
+    <li><a href="#calculadora">Calculadora</a></li>
+    <li><a href="#contacto" class="nav-cta">Agendar demo</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-grid"></div>
+
+  <div class="badge">Automatización de cobranza</div>
+
+  <h1>Cobros automáticos por<br><em>WhatsApp.</em> Sin esfuerzo.</h1>
+
+  <p class="hero-sub">
+    Florbyte envía recordatorios de pago personalizados a tus alumnos, hace seguimiento automático y te muestra en tiempo real quién pagó y quién no.
+  </p>
+
+  <div class="hero-actions">
+    <a href="#contacto" class="btn-primary">
+      Agendar demo gratuita
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>
+    <a href="#como-funciona" class="btn-secondary">Ver cómo funciona</a>
+  </div>
+
+  <!-- Dashboard Mockup -->
+  <div class="hero-visual">
+    <div class="dashboard-frame">
+      <div class="frame-bar">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+        <div class="frame-url">app.florbyte.mx/dashboard</div>
+      </div>
+      <div class="dashboard-content">
+        <div class="stat-card">
+          <div class="stat-label">Mensajes enviados</div>
+          <div class="stat-value teal">1,248</div>
+          <div class="stat-change">↑ 12% este mes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tasa de respuesta</div>
+          <div class="stat-value">87%</div>
+          <div class="stat-change">↑ 5% vs email</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pagos recuperados</div>
+          <div class="stat-value teal">$124k</div>
+          <div class="stat-change">↑ 34% este ciclo</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Cartera vencida</div>
+          <div class="stat-value">-18%</div>
+          <div class="stat-change" style="color:var(--teal)">↓ reducción real</div>
+        </div>
+      </div>
+      <div class="dashboard-bottom">
+        <div class="table-card">
+          <div class="table-title">Recordatorios recientes</div>
+          <div class="table-row">
+            <span>García Martínez, A.</span>
+            <span class="status-badge status-paid">Pagado</span>
+          </div>
+          <div class="table-row">
+            <span>López Sánchez, M.</span>
+            <span class="status-badge status-sent">Enviado</span>
+          </div>
+          <div class="table-row">
+            <span>Rodríguez, P.</span>
+            <span class="status-badge status-pending">Pendiente</span>
+          </div>
+          <div class="table-row">
+            <span>Hernández, C.</span>
+            <span class="status-badge status-paid">Pagado</span>
+          </div>
+          <div class="table-row">
+            <span>Torres Vega, L.</span>
+            <span class="status-badge status-sent">Enviado</span>
+          </div>
+        </div>
+        <div class="whatsapp-card">
+          <div class="wa-header">
+            <div class="wa-icon">💬</div>
+            <div class="wa-title">Vista previa del mensaje</div>
+          </div>
+          <div class="wa-bubble">
+            Hola <strong>Sra. García</strong>, le recordamos que la colegiatura de <strong>Abril</strong> está próxima a vencer. Monto: <strong>$3,200</strong>. ¿Desea más información?
+          </div>
+          <div class="wa-bubble-reply">
+            Sí, ¿cómo puedo pagar? 🙏
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS STRIP -->
+<div class="stats-strip">
+  <div class="strip-stat">
+    <div class="strip-num">87%</div>
+    <div class="strip-label">tasa de apertura en WhatsApp</div>
+  </div>
+  <div class="strip-stat">
+    <div class="strip-num">3x</div>
+    <div class="strip-label">más pagos que con llamadas</div>
+  </div>
+  <div class="strip-stat">
+    <div class="strip-num">0</div>
+    <div class="strip-label">horas de seguimiento manual</div>
+  </div>
+  <div class="strip-stat">
+    <div class="strip-num">24/7</div>
+    <div class="strip-label">seguimiento automático</div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="como-funciona">
+  <div class="section-tag">Cómo funciona</div>
+  <h2 class="section-title">Listo en minutos, cobrando solo.</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-icon">📋</div>
+      <h3>Carga tus alumnos</h3>
+      <p>Importa tu lista de alumnos y adeudos desde Excel o conéctate directo a tu sistema escolar. Sin configuraciones complicadas.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-icon">⚙️</div>
+      <h3>Configura tus reglas</h3>
+      <p>Define cuándo enviar recordatorios, con qué frecuencia y qué mensaje. Florbyte se encarga del resto automáticamente.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-icon">📊</div>
+      <h3>Monitorea en tiempo real</h3>
+      <p>Ve en tu dashboard quién respondió, quién pagó y cuánto has recuperado. Todo en un solo lugar.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOR WHO -->
+<div class="forwho" id="para-quien">
+  <div class="forwho-inner">
+    <div>
+      <div class="section-tag">Para quién es</div>
+      <h2 class="section-title">Diseñado para escuelas privadas que cobran manualmente.</h2>
+    </div>
+    <div class="problems">
+      <div class="problem-item">
+        <div class="problem-icon">📞</div>
+        <div class="problem-text">
+          <h4>¿Tu personal llama uno por uno?</h4>
+          <p>Florbyte reemplaza esas horas de llamadas con mensajes automáticos personalizados.</p>
+        </div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-icon">📧</div>
+        <div class="problem-text">
+          <h4>¿Mandas correos que nadie lee?</h4>
+          <p>WhatsApp tiene 87% de tasa de apertura. Tus mensajes llegan y se leen.</p>
+        </div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-icon">📉</div>
+        <div class="problem-text">
+          <h4>¿Cartera vencida creciendo?</h4>
+          <p>El seguimiento constante y automático reduce la mora antes de que sea un problema.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ROI CALCULATOR -->
+<div class="calc-section" id="calculadora">
+  <div class="calc-inner">
+    <div class="calc-left">
+      <div class="section-tag">Calculadora de pérdidas</div>
+      <h2 class="section-title">¿Cuánto dinero está dejando ir tu escuela?</h2>
+      <p class="calc-desc">Ingresa los datos de tu escuela y calcula en segundos cuánto estás perdiendo por mora — y cuánto podrías recuperar con Florbyte.</p>
+
+      <div class="calc-form">
+        <div class="calc-field">
+          <label>Número de alumnos</label>
+          <input type="number" id="alumnos" placeholder="Ej. 200" min="1" oninput="calcular()">
+        </div>
+        <div class="calc-field">
+          <label>Colegiatura mensual por alumno</label>
+          <div class="input-prefix">
+            <span>$</span>
+            <input type="number" id="colegiatura" placeholder="Ej. 3500" min="1" oninput="calcular()">
+          </div>
+        </div>
+        <div class="calc-field">
+          <label>% de alumnos que pagan tarde</label>
+          <div class="input-suffix">
+            <span>%</span>
+            <input type="number" id="mora" placeholder="Ej. 20" min="1" max="100" value="20" oninput="calcular()">
+          </div>
+        </div>
+        <div class="calc-field">
+          <label>Promedio de días de retraso</label>
+          <div class="input-suffix">
+            <span>días</span>
+            <input type="number" id="dias" placeholder="Ej. 15" min="1" value="15" oninput="calcinar()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-results" id="calc-results">
+      <div class="results-header">📊 Tu diagnóstico financiero</div>
+      <div id="results-body">
+        <div class="empty-state">
+          <div class="empty-icon">🏫</div>
+          Ingresa los datos de tu escuela para ver cuánto estás perdiendo cada mes.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CTA -->
+<section class="cta-section" id="contacto">
+  <div class="cta-glow"></div>
+  <h2>¿Listo para cobrar sin perseguir?</h2>
+  <p>Agenda una demo gratuita y te mostramos cómo Florbyte funciona con tu escuela en menos de 20 minutos.</p>
+  <a href="https://wa.me/5214421000000" class="btn-primary" style="font-size:1rem; padding: 1rem 2rem; display:inline-flex;">
+    💬 &nbsp; Agendar demo por WhatsApp
+  </a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo-small">florbyte</div>
+  <p>© 2025 Florbyte. Querétaro, México.</p>
+</footer>
+
+<script>
+function fmt(n) {
+  return '$' + Math.round(n).toLocaleString('es-MX');
+}
+
+function calcular() {
+  const alumnos    = parseFloat(document.getElementById('alumnos').value) || 0;
+  const colegiatura = parseFloat(document.getElementById('colegiatura').value) || 0;
+  const moraPct    = parseFloat(document.getElementById('mora').value) || 20;
+  const diasInput  = document.getElementById('dias');
+  const dias       = parseFloat(diasInput ? diasInput.value : 15) || 15;
+
+  if (!alumnos || !colegiatura) {
+    document.getElementById('results-body').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🏫</div>
+        Ingresa los datos de tu escuela para ver cuánto estás perdiendo cada mes.
+      </div>`;
+    return;
+  }
+
+  const totalMensual     = alumnos * colegiatura;
+  const alumnosMora      = Math.round(alumnos * (moraPct / 100));
+  const moraTotal        = alumnosMora * colegiatura;
+  const moraAnual        = moraTotal * 12;
+
+  // Costo de capital: dinero que no puedes usar (tasa oportunidad ~1% mensual)
+  const costoCapital     = moraTotal * 0.01 * (dias / 30);
+
+  // Tiempo admin: ~5 min por alumno en mora, $80/hr costo admin
+  const hrsAdmin         = (alumnosMora * 5) / 60;
+  const costoAdmin       = hrsAdmin * 80;
+
+  // Total pérdida mensual real
+  const perdidaMensual   = costoCapital + costoAdmin;
+  const perdidaAnual     = perdidaMensual * 12;
+
+  // Con Florbyte: recupera ~70% de mora gracias a recordatorios
+  const recuperado       = moraTotal * 0.70;
+  const costoFlorbyte    = Math.min(Math.max(alumnos * 15, 1500), 8000); // estimado mensual
+  const beneficioNeto    = recuperado - costoFlorbyte;
+  const roi              = costoFlorbyte > 0 ? Math.round((beneficioNeto / costoFlorbyte) * 100) : 0;
+
+  document.getElementById('results-body').innerHTML = `
+    <div class="result-row">
+      <div class="result-label">Ingresos totales mensuales</div>
+      <div class="result-value">${fmt(totalMensual)}</div>
+    </div>
+    <div class="result-row">
+      <div class="result-label">Alumnos pagando tarde</div>
+      <div class="result-value danger">${alumnosMora} alumnos</div>
+    </div>
+    <div class="result-row">
+      <div class="result-label">Colegiaturas en mora este mes</div>
+      <div class="result-value danger">${fmt(moraTotal)}</div>
+    </div>
+    <div class="result-row">
+      <div class="result-label">Mora acumulada proyectada al año</div>
+      <div class="result-value danger">${fmt(moraAnual)}</div>
+    </div>
+    <div class="result-row">
+      <div class="result-label">Costo oculto: capital sin usar + admin</div>
+      <div class="result-value danger">−${fmt(perdidaMensual)}/mes</div>
+    </div>
+    <div class="result-row">
+      <div class="result-label">Recuperación estimada con Florbyte</div>
+      <div class="result-value highlight">+${fmt(recuperado)}/mes</div>
+    </div>
+
+    <div class="roi-highlight">
+      <div class="roi-label">Retorno sobre inversión estimado</div>
+      <div class="roi-number">${roi}%</div>
+      <div class="roi-sub">Por cada peso invertido en Florbyte,<br>recuperas <strong>${fmt(1 + beneficioNeto/costoFlorbyte)}</strong> en colegiaturas.</div>
+    </div>
+
+    <a href="https://wa.me/5214421000000" class="calc-cta">
+      💬 &nbsp; Quiero recuperar ${fmt(recuperado)} al mes
+    </a>
+  `;
+}
+
+// Fix typo in oninput for dias field
+document.addEventListener('DOMContentLoaded', () => {
+  const diasEl = document.getElementById('dias');
+  if (diasEl) diasEl.setAttribute('oninput', 'calcular()');
+});
+</script>
+</body>
+</html>
