@@ -167,12 +167,19 @@
 
   h1 {
     font-family: 'Syne', sans-serif;
-    font-size: clamp(2.8rem, 6vw, 5rem);
+    font-size: clamp(1.9rem, 5vw, 5rem);
     font-weight: 800;
-    line-height: 1.05;
-    letter-spacing: -0.03em;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
     max-width: 780px;
+    width: 100%;
+    word-break: break-word;
+    overflow-wrap: break-word;
     animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  @media (max-width: 480px) {
+    h1 { font-size: 2rem; letter-spacing: -0.01em; }
   }
 
   h1 em {
@@ -891,7 +898,10 @@
   @media (max-width: 768px) {
     nav { padding: 1rem 1.5rem; }
     .nav-links { display: none; }
-    .hero { padding: 7rem 1.5rem 3rem; }
+    .hero { padding: 7rem 1rem 3rem; overflow-x: hidden; }
+    h1 { font-size: clamp(1.8rem, 8vw, 2.4rem) !important; padding: 0 0.5rem; word-break: break-word; }
+    .hero-actions { flex-direction: column; align-items: stretch; width: 100%; max-width: 320px; }
+    .btn-primary, .btn-secondary { justify-content: center; width: 100%; }
     .steps { grid-template-columns: 1fr; }
     .forwho-inner { grid-template-columns: 1fr; gap: 2rem; }
     .stats-strip { gap: 2rem; flex-wrap: wrap; padding: 2rem; }
@@ -901,6 +911,10 @@
     footer { flex-direction: column; gap: 1rem; text-align: center; }
     .dashboard-content { grid-template-columns: 1fr 1fr; }
     .dashboard-bottom { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 400px) {
+    h1 { font-size: 1.65rem !important; }
   }
 </style>
 </head>
@@ -1155,7 +1169,7 @@
   <div class="cta-glow"></div>
   <h2>¿Listo para cobrar sin perseguir?</h2>
   <p>Agenda una demo gratuita y te mostramos cómo Florbyte funciona con tu escuela en menos de 20 minutos.</p>
-  <a href="https://wa.me/528148982447" class="btn-primary" style="font-size:1rem; padding: 1rem 2rem; display:inline-flex;">
+  <a href="https://wa.me/5214421000000" class="btn-primary" style="font-size:1rem; padding: 1rem 2rem; display:inline-flex;">
     💬 &nbsp; Agendar demo por WhatsApp
   </a>
 </section>
@@ -1241,7 +1255,7 @@ function calcular() {
       <div class="roi-sub">Por cada peso invertido en Florbyte,<br>recuperas <strong>${fmt(1 + beneficioNeto/costoFlorbyte)}</strong> en colegiaturas.</div>
     </div>
 
-    <a href="https://wa.me/528148982447" class="calc-cta">
+    <a href="https://wa.me/5214421000000" class="calc-cta">
       💬 &nbsp; Quiero recuperar ${fmt(recuperado)} al mes
     </a>
   `;
